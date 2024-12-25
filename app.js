@@ -1,33 +1,41 @@
-require('dotenv').config();
 const express = require('express');
+const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
 
-// Route to serve login page
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'login.html'));
+// MongoDB connection
+const mongoURI = process.env.MONGO_URI || 'XNA7SeWNBOZeaObHn4ywGCzcvbcNTZUSn1TOMMTloqynE5pCwOaWasn8Y25VrCmSVKd5vXLASUvrACDbVaRQEQ==';
+
+mongoose
+  .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('MongoDB connected'))
+  .catch((err) => console.error('MongoDB connection error:', err));
+
+// User Schema
+const userSchema = new mongoose.Schema({
+  username: String,
+  password: String,
 });
 
-// Handle login form submission
-app.post('/login', (req, res) => {
+const User = mongoose.model('User', userSchema);
+
+// Endpoint to add user
+app.post('/addUser', async (req, res) => {
   const { username, password } = req.body;
 
-  // Replace this with real authentication logic
-  if (username === process.env.USERNAME && password === process.env.PASSWORD) {
-    res.send(`<h1>Welcome, ${username}!</h1>`);
-  } else {
-    res.send('<h1>Invalid username or password</h1>');
+  try {
+    const newUser = new User({ username, password });
+    await newUser.save();
+    res.send('User added successfully!');
+  } catch (error) {
+    res.status(500).send('Error adding user');
   }
 });
 
-// Start the server
+// App listening
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
